@@ -21,50 +21,65 @@ func TestPathTransformFunc(t *testing.T) {
 	}
 }
 
-func TestStoreDeleteKey(t *testing.T) {
-	opts := StoreOpts{
-		PathTransformFunc: CASPathTransformFunc,
-	}
-	s := NewStore(opts)
-	key := "bestPictures"
-	data := []byte("some files")
+// func TestStoreDeleteKey(t *testing.T) {
+// 	opts := StoreOpts{
+// 		PathTransformFunc: CASPathTransformFunc,
+// 	}
+// 	s := NewStore(opts)
+// 	key := "bestPictures"
+// 	data := []byte("some files")
 
-	if err := s.writeStream(key, bytes.NewReader(data)); err != nil {
-		t.Error(err)
-	}
+// 	if err := s.writeStream(key, bytes.NewReader(data)); err != nil {
+// 		t.Error(err)
+// 	}
 
-	if err := s.Delete(key); err != nil {
-		t.Error(err)
+// 	if err := s.Delete(key); err != nil {
+// 		t.Error(err)
+// 	}
+// }
+
+func TestStore(t *testing.T) {
+	s := newStore()
+	defer tearDown(t, s)
+
+	for i := 0; i < 50; i++ {
+
+		key := fmt.Sprintf("key-%d", i)
+		data := []byte("some file")
+		if err := s.writeStream(key, bytes.NewReader(data)); err != nil {
+			t.Error(err)
+		}
+
+		if ok := s.Has(key); !ok {
+			t.Errorf("expected to have key %s :", key)
+		}
+
+		r, err := s.Read(key)
+		if err != nil {
+			t.Error(err)
+		}
+		b, _ := io.ReadAll(r)
+		fmt.Println("Read the data : ", string(b))
+
+		if string(b) != string(data) {
+			t.Errorf("error in reading the data")
+		}
+
+		if err := s.Delete(key); err != nil {
+			t.Errorf("expected to Not have the key %s", key)
+		}
 	}
 }
 
-func TestStore(t *testing.T) {
+func newStore() *Store {
 	opts := StoreOpts{
 		PathTransformFunc: CASPathTransformFunc,
 	}
-	s := NewStore(opts)
-	key := "Akhileshs special"
+	return NewStore(opts)
+}
 
-	data := []byte("some file")
-	if err := s.writeStream(key, bytes.NewReader(data)); err != nil {
+func tearDown(t *testing.T, s *Store) {
+	if err := s.Clear(); err != nil {
 		t.Error(err)
 	}
-
-	if ok := s.Has(key); !ok {
-		t.Errorf("expected to have key %s :", key)
-	}
-
-	r, err := s.Read(key)
-	if err != nil {
-		t.Error(err)
-	}
-	b, _ := io.ReadAll(r)
-	fmt.Println("Read the data : ", string(b))
-
-	if string(b) != string(data) {
-		t.Errorf("error in reading the data")
-	}
-
-	s.Delete(key)
-
 }
