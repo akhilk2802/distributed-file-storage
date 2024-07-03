@@ -3,6 +3,7 @@ package p2p
 import (
 	"fmt"
 	"net"
+	"reflect"
 )
 
 // remote node over TCP connection
@@ -102,9 +103,13 @@ func (t *TCPTransport) handleConn(conn net.Conn) {
 
 	rpc := RPC{}
 	for {
-		if err := t.TCPTransportOpts.Decoder.Decode(conn, &rpc); err != nil {
-			fmt.Printf("TCP error : %s\n", err)
-			continue
+		err := t.TCPTransportOpts.Decoder.Decode(conn, &rpc)
+		fmt.Println("Type of Error : ", reflect.TypeOf(err))
+		// panic(err)
+
+		if err != nil {
+			fmt.Printf("TCP Read error : %s\n", err)
+			return
 		}
 		rpc.From = conn.RemoteAddr()
 		fmt.Printf("message : %+v\n", rpc)

@@ -7,11 +7,18 @@ import (
 	"github.com/akhilk2802/distributed-file-storage/p2p"
 )
 
+func OnPeer(peer p2p.Peer) error {
+	fmt.Println("Doing some logical task with the peer outisde of TCP Transport")
+	peer.Close()
+	return nil
+}
+
 func main() {
 	tcpOpts := p2p.TCPTransportOps{
 		ListenAddr:     ":3000",
 		HandeShakeFunc: p2p.NOPHandShakeFunc,
 		Decoder:        p2p.DefaultDecoder{},
+		OnPeer:         OnPeer,
 	}
 	tr := p2p.NewTCPTransport(tcpOpts)
 
