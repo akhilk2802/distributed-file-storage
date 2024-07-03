@@ -3,7 +3,6 @@ package main
 import "github.com/akhilk2802/distributed-file-storage/p2p"
 
 type FileServerOpts struct {
-	listenAddr        string
 	storageRoot       string
 	pathTransformFunc PathTransformFunc
 	Transport         p2p.Transport
@@ -27,6 +26,9 @@ func NewFileServer(opts FileServerOpts) *FileServer {
 	return fs
 }
 
-func (s *FileServerOpts) start() {
-
+func (s *FileServerOpts) start() error {
+	if err := s.Transport.ListenAndAccept(); err != nil {
+		return err
+	}
+	return nil
 }
