@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/akhilk2802/distributed-file-storage/p2p"
 )
@@ -42,26 +44,6 @@ func makeServer(listenAddr string, nodes ...string) *FileServer {
 }
 
 func main() {
-	// tcpOpts := p2p.TCPTransportOps{
-	// 	ListenAddr:     ":3000",
-	// 	HandeShakeFunc: p2p.NOPHandShakeFunc,
-	// 	Decoder:        p2p.DefaultDecoder{},
-	// 	OnPeer:         OnPeer,
-	// }
-	// tr := p2p.NewTCPTransport(tcpOpts)
-
-	// go func() {
-	// 	for {
-	// 		msg := <-tr.Consume()
-	// 		fmt.Printf("Message from main function go routine : %+v\n", msg)
-	// 	}
-	// }()
-
-	// err := tr.ListenAndAccept()
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// select {}
 
 	s1 := makeServer(":3000", "")
 	s2 := makeServer(":4000", ":3000")
@@ -70,5 +52,10 @@ func main() {
 			log.Fatal("unable to start the server : ", err)
 		}
 	}()
-	s2.start()
+	go s2.start()
+	time.Sleep(time.Second * 2)
+	data := bytes.NewReader([]byte("my data file is here"))
+	s2.StoreData("privateData", data)
+
+	select {}
 }
