@@ -47,7 +47,7 @@ func (p PathKey) FirstPathName() string {
 }
 
 func (p PathKey) FullPath() string {
-	return fmt.Sprintf("%s%s", p.PathName, p.FileName)
+	return fmt.Sprintf("%s/%s", p.PathName, p.FileName)
 }
 
 type StoreOpts struct {
