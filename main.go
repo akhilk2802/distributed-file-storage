@@ -55,7 +55,19 @@ func main() {
 	go s2.start()
 	time.Sleep(time.Second * 5)
 	data := bytes.NewReader([]byte("my data file is here"))
-	s2.StoreData("privateData", data)
+	s2.Store("privateData", data)
+
+	// r, err := s2.Get("privateData")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	// b, err := ioutil.ReadAll(r)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	// fmt.Println(string(b))
 
 	select {}
 }

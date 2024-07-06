@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"reflect"
+	"sync"
 )
 
 // remote node over TCP connection
@@ -16,12 +16,14 @@ type TCPPeer struct {
 	// if we dial a connection -> outbound == true
 	// if we accept a connection -> outbound == false
 	outbound bool
+	Wg       *sync.WaitGroup
 }
 
 func NewTCPPeer(conn net.Conn, outbound bool) *TCPPeer {
 	return &TCPPeer{
 		Conn:     conn,
 		outbound: outbound,
+		Wg:       &sync.WaitGroup{},
 	}
 }
 
@@ -98,8 +100,6 @@ func (t *TCPTransport) Dial(addr string) error {
 	return nil
 }
 
-
-
 func (t *TCPTransport) startAcceptLoop() {
 	for {
 		conn, err := t.listener.Accept()
@@ -141,15 +141,21 @@ func (t *TCPTransport) handleConn(conn net.Conn, outbound bool) {
 	rpc := RPC{}
 	for {
 		err := t.TCPTransportOpts.Decoder.Decode(conn, &rpc)
-		fmt.Println("Type of Error : ", reflect.TypeOf(err))
-		// panic(err)
-
 		if err != nil {
 			fmt.Printf("TCP Read error : %s\n", err)
 			return
 		}
-		rpc.From = conn.RemoteAddr()
-		fmt.Printf("message : %+v\n", rpc)
+
+		rpc.From = conn.RemoteAddr().String()
+
+		if rpc.Stream {
+			peer.Wg.Add(1)
+			fmt.Println("waiting till the stream is done\n", conn.RemoteAddr())
+			peer.Wg.Wait()
+			fmt.Println("Stream closed resuming read loop\n", conn.RemoteAddr())
+			continue
+		}
+
 		t.rpcch <- rpc
 	}
 

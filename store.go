@@ -106,7 +106,7 @@ func (s *Store) Delete(key string) error {
 
 }
 
-func (s *Store) Write(Key string, r io.Reader) error {
+func (s *Store) Write(Key string, r io.Reader) (int64, error) {
 	return s.writeStream(Key, r)
 }
 
@@ -132,22 +132,22 @@ func (s *Store) readStream(key string) (io.ReadCloser, error) {
 	return f, nil
 }
 
-func (s *Store) writeStream(Key string, r io.Reader) error {
+func (s *Store) writeStream(Key string, r io.Reader) (int64, error) {
 	PathKey := s.PathTransformFunc(Key)
 	PathNameWithRoot := fmt.Sprintf("%s/%s", s.Root, PathKey.PathName)
 	if err := os.MkdirAll(PathNameWithRoot, os.ModePerm); err != nil {
-		return err
+		return 0, err
 	}
 
 	FullPathWithRoot := fmt.Sprintf("%s/%s", s.Root, PathKey.FullPath())
 	file, err := os.Create(FullPathWithRoot)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	n, err := io.Copy(file, r)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	log.Printf("Written (%d) bytes to disk: %s ", n, FullPathWithRoot)
-	return nil
+	return n, nil
 }
