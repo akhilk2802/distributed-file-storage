@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/gob"
 	"errors"
 	"fmt"
@@ -77,20 +78,19 @@ func (s *FileServer) Get(key string) (io.Reader, error) {
 	time.Sleep(time.Millisecond * 500)
 
 	for _, peer := range s.peers {
-		fileBuf := new(bytes.Buffer)
-		n, err := io.CopyN(fileBuf, peer, 30)
+		// First read the file size so we can limit the amount of bytes that we need from the connection
+		var fileSize int64
+		binary.Read(peer, binary.LittleEndian, &fileSize)
+		n, err := s.store.Write(key, io.LimitReader(peer, fileSize))
 		if err != nil {
 			return nil, err
 		}
-		fmt.Printf("[%s] Recieved (%d) bytes over the network from (%s): ", s.Transport.Addr(), n, peer.RemoteAddr())
-		fmt.Println(fileBuf.String())
 
+		fmt.Printf("[%s] Recieved (%d) bytes over the network from (%s): ", s.Transport.Addr(), n, peer.RemoteAddr())
 		peer.CloseStream()
 	}
 
-	select {}
-
-	return nil, errors.New("file not found")
+	return s.store.Read(key)
 }
 
 // type DataMessage struct {
@@ -222,7 +222,11 @@ func (s *FileServer) handleMessageGetFile(from string, msg MessageGetFile) error
 		return fmt.Errorf("Peer %s not in map", from)
 	}
 
+	//First send the "incoming stream byte to the peer"
+	// and then we can send the file size
 	peer.Send([]byte{p2p.IncomingStream})
+	var fileSize int64 = 22
+	binary.Write(peer, binary.LittleEndian, fileSize)
 	n, err := io.Copy(peer, r)
 	if err != nil {
 		return err
