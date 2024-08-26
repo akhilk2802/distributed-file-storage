@@ -61,7 +61,8 @@ type MessageGetFile struct {
 func (s *FileServer) Get(key string) (io.Reader, error) {
 	if s.store.Has(key) {
 		fmt.Printf("[%s] Serving file (%s) from local disk \n", s.Transport.Addr(), key)
-		return s.store.Read(key)
+		_, r, err := s.store.Read(key)
+		return r, err
 	}
 	fmt.Printf("[%s] don't have (%s) file locally, fetching from the network \n", s.Transport.Addr(), key)
 
@@ -90,7 +91,8 @@ func (s *FileServer) Get(key string) (io.Reader, error) {
 		peer.CloseStream()
 	}
 
-	return s.store.Read(key)
+	_, r, err := s.store.Read(key)
+	return r, err
 }
 
 // type DataMessage struct {
@@ -212,7 +214,7 @@ func (s *FileServer) handleMessageGetFile(from string, msg MessageGetFile) error
 	}
 	fmt.Printf("[%s] serving file (%s) over the network\n", s.Transport.Addr(), msg.Key)
 
-	r, err := s.store.Read(msg.Key)
+	fileSize, r, err := s.store.Read(msg.Key)
 	if err != nil {
 		return err
 	}
@@ -225,7 +227,6 @@ func (s *FileServer) handleMessageGetFile(from string, msg MessageGetFile) error
 	//First send the "incoming stream byte to the peer"
 	// and then we can send the file size
 	peer.Send([]byte{p2p.IncomingStream})
-	var fileSize int64 = 22
 	binary.Write(peer, binary.LittleEndian, fileSize)
 	n, err := io.Copy(peer, r)
 	if err != nil {

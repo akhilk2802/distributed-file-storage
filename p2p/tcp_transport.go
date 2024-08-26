@@ -27,20 +27,6 @@ func NewTCPPeer(conn net.Conn, outbound bool) *TCPPeer {
 	}
 }
 
-func (p *TCPPeer) CloseStream() {
-	p.wg.Done()
-}
-
-func (p *TCPPeer) Send(b []byte) error {
-	_, err := p.Conn.Write(b)
-	return err
-}
-
-// Close implements the peer interface
-func (p *TCPPeer) Close() error {
-	return p.Conn.Close()
-}
-
 type TCPTransportOps struct {
 	ListenAddr     string
 	HandeShakeFunc HandeShakeFunc
@@ -62,6 +48,20 @@ func NewTCPTransport(opts TCPTransportOps) *TCPTransport {
 		TCPTransportOpts: opts,
 		rpcch:            make(chan RPC, 1024),
 	}
+}
+
+func (p *TCPPeer) CloseStream() {
+	p.wg.Done()
+}
+
+func (p *TCPPeer) Send(b []byte) error {
+	_, err := p.Conn.Write(b)
+	return err
+}
+
+// Close implements the peer interface
+func (p *TCPPeer) Close() error {
+	return p.Conn.Close()
 }
 
 // Addr implements transport interface returns the address
